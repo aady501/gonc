@@ -13,7 +13,8 @@ type Progress struct {
 }
 
 // TransferStreams launches two read-write goroutines and waits for signal from them
-func TransferStreams(con net.Conn) {
+func TransferStreams(params ...net.Conn) {
+	con := params[0]
 	c := make(chan Progress)
 
 	// Read from Reader and write to Writer until EOF
@@ -28,10 +29,14 @@ func TransferStreams(con net.Conn) {
 		}
 		c <- Progress{bytes: uint64(n)}
 	}
-
-	go copy(con, os.Stdout)
-	go copy(os.Stdin, con)
-
+	if len(params) == 1 {
+		go copy(con, os.Stdout)
+		go copy(os.Stdin, con)
+	}else{
+		proxy_con := params[1]
+		go copy(con, proxy_con)
+		go copy(proxy_con, con)
+	}
 	p := <-c
 	log.Printf("[%s]: Connection has been closed by remote peer, %d bytes has been received\n", con.RemoteAddr(), p.bytes)
 	p = <-c
@@ -39,18 +44,23 @@ func TransferStreams(con net.Conn) {
 }
 
 // StartServer starts TCP listener
-func StartServer(proto string, port string) {
-	ln, err := net.Listen(proto, port)
+func StartServer(proto string, port string, listen_port string, host string) {
+	ln, err := net.Listen(proto, listen_port)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	log.Println("Listening on", proto+port)
+	log.Println("Listening on", proto+listen_port)
 	con, err := ln.Accept()
 	if err != nil {
 		log.Fatalln(err)
 	}
 	log.Printf("[%s]: Connection has been opened\n", con.RemoteAddr())
-	TransferStreams(con)
+	proxy_con, err := net.Dial(proto, host+port)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.Printf("Proxy Connected")
+	TransferStreams(con, proxy_con)
 }
 
 // StartClient starts TCP connector
