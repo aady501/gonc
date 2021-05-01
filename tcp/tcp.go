@@ -137,7 +137,7 @@ func stream_copy(src io.Reader, dst io.Writer,encrypt bool, flush bool) <-chan i
 				nonce_size := aesGCM.NonceSize()
 				//log.Println("NonceSize: ", aesGCM.NonceSize(), "nbytes=", nBytes)
 
-				//log.Println("In Decryption: ", buf[nonce_size:nBytes], ", String: ", string(buf[:nBytes]))
+				log.Println("In Decryption(Before Open): ", string(buf[:nBytes]))
 				if err != nil {
 					log.Fatalf(err.Error())
 				}
@@ -158,7 +158,7 @@ func stream_copy(src io.Reader, dst io.Writer,encrypt bool, flush bool) <-chan i
 					}
 
 				//log.Println("Decrypted: ", plaintext[:], ", ", string(plaintext[:]))
-				log.Println("Before Decryption: " ,string(buf[:nBytes]),"Decrypted: ", string(plaintext[:]))
+				log.Println("Decrypted: ", string(plaintext[:]))
 			}
 		}
 	}()
