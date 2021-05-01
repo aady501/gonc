@@ -118,10 +118,10 @@ func stream_copy(src io.Reader, dst io.Writer,encrypt bool, flush bool) <-chan i
 				if err != nil {
 					log.Fatalf("Write error: %s\n", err)
 				}
-					/*err = buf_dst.Flush()
+					err = buf_dst.Flush()
 					if err != nil{
 						log.Fatalf("Flush Error: %s\n", err)
-					}*/
+					}
 				//log.Println("Encrypted ",ciphertext, ",", string(ciphertext[:]), "Length of ciphertext: ", len(ciphertext))
 				log.Println("Before Encryption: ", string(buf[:nBytes]),"Encrypted: ", string(ciphertext[:]))
 			}else{
@@ -152,12 +152,11 @@ func stream_copy(src io.Reader, dst io.Writer,encrypt bool, flush bool) <-chan i
 				if err != nil {
 					log.Fatalf("Write error: %s\n", err)
 				}
-				/*if flush{
 					err = buf_dst.Flush()
 					if err != nil{
 						log.Fatalf("Flush Error: %s\n", err)
 					}
-				}*/
+
 				//log.Println("Decrypted: ", plaintext[:], ", ", string(plaintext[:]))
 				log.Println("Before Decryption: " ,string(buf[:nBytes]),"Decrypted: ", string(plaintext[:]))
 			}
