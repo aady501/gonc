@@ -5,12 +5,12 @@ import (
 	"log"
 	"net"
 	"os"
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"crypto/sha256"
+	//"crypto/aes"
+	//"crypto/cipher"
+	//"crypto/rand"
+	//"crypto/sha256"
 	//"encoding/hex"
-	"golang.org/x/crypto/pbkdf2"
+	//"golang.org/x/crypto/pbkdf2"
 	//"bytes"
 	"encoding/base64"
 	"time"
@@ -87,8 +87,17 @@ func stream_copy(src io.Reader, dst io.Writer,encrypt bool, flush bool) <-chan i
 				}else{
 					log.Println("Error in Read: %s\n",err)
 				}
+				break
 			}
-			if encrypt{
+				_, err = buf_dst.Write(buf[:nBytes])
+				if err != nil {
+					log.Fatalf("Write error: %s\n", err)
+				}
+					err = buf_dst.Flush()
+					if err != nil{
+						log.Fatalf("Flush Error: %s\n", err)
+					}
+			/*if encrypt{
 				//log.Println("In Encryption: ", buf, ", String: ", string(buf[:]))
 				//salt := bytes.NewbufferString(genSalt()).Bytes()
 				salt := make([]byte, 8)
@@ -159,7 +168,7 @@ func stream_copy(src io.Reader, dst io.Writer,encrypt bool, flush bool) <-chan i
 
 				//log.Println("Decrypted: ", plaintext[:], ", ", string(plaintext[:]))
 				log.Println("Decrypted: ", string(plaintext[:]))
-			}
+			}*/
 		}
 	}()
 	return sync_channel
