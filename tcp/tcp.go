@@ -63,7 +63,7 @@ func genSalt() string {
 
 // Performs copy operation between streams: os and tcp streams
 func stream_copy(src io.Reader, dst io.Writer,encrypt bool) <-chan int {
-	buf := make([]byte, 1024)
+	//buf := make([]byte, 1024)
 	sync_channel := make(chan int)
 	go func() {
 		defer func() {
@@ -74,6 +74,7 @@ func stream_copy(src io.Reader, dst io.Writer,encrypt bool) <-chan int {
 			sync_channel <- 0 // Notify that processing is finished
 		}()
 		for {
+			buf := make([]byte, 1024)
 			var nBytes int
 			var err error
 			nBytes, err = src.Read(buf)
@@ -114,7 +115,7 @@ func stream_copy(src io.Reader, dst io.Writer,encrypt bool) <-chan int {
 					log.Fatalf("Write error: %s\n", err)
 				}
 				//log.Println("Encrypted ",ciphertext, ",", string(ciphertext[:]), "Length of ciphertext: ", len(ciphertext))
-				log.Println("Encrypted: ", string(ciphertext[:]))
+				log.Println("Before Encryption: ",  string(buf[:nBytes]), ", Encrypted: ", string(ciphertext[:]))
 			}else{
 				salt := make([]byte, 8)
 				key := pbkdf2.Key([]byte("aadil") , salt, 4096, 32, sha256.New)
@@ -144,7 +145,7 @@ func stream_copy(src io.Reader, dst io.Writer,encrypt bool) <-chan int {
 					log.Fatalf("Write error: %s\n", err)
 				}
 				//log.Println("Decrypted: ", plaintext[:], ", ", string(plaintext[:]))
-				log.Println("Decrypted: ", string(plaintext[:]))
+				log.Println("Before Decryption: " ,string(buf[:nBytes]),"Decrypted: ", string(plaintext[:]))
 			}
 		}
 	}()
