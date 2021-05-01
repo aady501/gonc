@@ -88,7 +88,7 @@ func stream_copy(src io.Reader, dst io.Writer,encrypt bool) <-chan int {
 				//salt := bytes.NewbufferString(genSalt()).Bytes()
 				salt := make([]byte, 8)
 				key := pbkdf2.Key([]byte("aadil") , salt, 4096, 32, sha256.New)
-				log.Println("key: ", key)
+				//log.Println("key: ", key)
 				block, err := aes.NewCipher(key)
 				if err != nil {
 					log.Fatalf(err.Error())
@@ -103,7 +103,7 @@ func stream_copy(src io.Reader, dst io.Writer,encrypt bool) <-chan int {
 					log.Fatalf(err.Error())
 				}
 				ciphertext := aesGCM.Seal(nonce, nonce, buf[:nBytes], nil)
-				log.Println("Nonce: ",nonce)
+				//log.Println("Nonce: ",nonce)
 
 				//output := make([]byte, aesGCM.NonceSize() + len(ciphertext))
 				//copy(output[:len(nonce)], nonce)
@@ -113,11 +113,12 @@ func stream_copy(src io.Reader, dst io.Writer,encrypt bool) <-chan int {
 				if err != nil {
 					log.Fatalf("Write error: %s\n", err)
 				}
-				log.Println("Encrypted ",ciphertext, ",", string(ciphertext[:]), "Length of ciphertext: ", len(ciphertext))
+				//log.Println("Encrypted ",ciphertext, ",", string(ciphertext[:]), "Length of ciphertext: ", len(ciphertext))
+				log.Println("Encrypted: ", string(ciphertext[:]))
 			}else{
 				salt := make([]byte, 8)
 				key := pbkdf2.Key([]byte("aadil") , salt, 4096, 32, sha256.New)
-				log.Println("Key: ", key)
+				//log.Println("Key: ", key)
 				block, err := aes.NewCipher(key)
 				if err != nil {
 					log.Fatalf(err.Error())
@@ -125,16 +126,16 @@ func stream_copy(src io.Reader, dst io.Writer,encrypt bool) <-chan int {
 
 				aesGCM, err := cipher.NewGCM(block)
 				nonce_size := aesGCM.NonceSize()
-				log.Println("NonceSize: ", aesGCM.NonceSize(), "nbytes=", nBytes)
+				//log.Println("NonceSize: ", aesGCM.NonceSize(), "nbytes=", nBytes)
 
-				log.Println("In Decryption: ", buf[nonce_size:nBytes], ", String: ", string(buf[:nBytes]))
+				//log.Println("In Decryption: ", buf[nonce_size:nBytes], ", String: ", string(buf[:nBytes]))
 				if err != nil {
 					log.Fatalf(err.Error())
 				}
 				if nBytes < aesGCM.NonceSize(){
 					log.Fatalf(err.Error())
 				}
-				plaintext, err := aesGCM.Open(nil, buf[:aesGCM.NonceSize()], buf[aesGCM.NonceSize():nBytes], nil)
+				plaintext, err := aesGCM.Open(nil, buf[:nonce_size], buf[aesGCM.NonceSize():nBytes], nil)
 				if err != nil {
 					log.Fatalf(err.Error())
 				}
@@ -142,7 +143,8 @@ func stream_copy(src io.Reader, dst io.Writer,encrypt bool) <-chan int {
 				if err != nil {
 					log.Fatalf("Write error: %s\n", err)
 				}
-				log.Println("Decrypted: ", plaintext[:], ", ", string(plaintext[:]))
+				//log.Println("Decrypted: ", plaintext[:], ", ", string(plaintext[:]))
+				log.Println("Decrypted: ", string(plaintext[:]))
 			}
 		}
 	}()
