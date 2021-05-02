@@ -1,0 +1,36 @@
+pbproxy adds a layer of encrytion to any service over TCP.
+
+Input:
+The pbproxy program takes in input using the "flag" package.
+
+Server:
+
+If the -l flag is, set the corresponding port(proxy port) is used as a listener (server). The server waits for any new connection, once a client is connectd the server establishes a connection with the "destination:port" (the actual service, eg: nc/ssh).
+The primary duties of the server are:
+1. To receive encrypted messages from client, decrypt them and forward to the service
+2. To receive messages from the service, encrypt them and forward to the corresponsing client
+3. Maintain multiple concurrent connections and server each client respectively (whichever service supports it, like nc doesnt but ssh does)
+
+Client:
+If the -l flag is not set pbprpxy acts as a client. Establishes connection with the server on the "proxy port".
+The primary duties of the client are:
+1. To fetch message from STDIN, encrypt them and forward to server
+2. To received encrypted messages from server, decrypt them and push to stdout
+
+Encryption/Decryption:
+
+All Encryption/Decryption is done using AES-256 in GCM mode. The AES key is derived using a passpharse read from a file (provided in input with -p flag)
+
+bufio is used to read and write to the buffer. For encryption I am using a smaller buffer size than for decryption, As after encryption the number of bytes may increase.The nonce is randomly generated for each message and prepended at the start of the buffer. The buffio write buffer is flushed after each read/write operation.
+
+Example commands:
+
+1. netcat:
+Start service: nc -l -p 12345
+Start pbproxy in server mode: ./pbproxy -l 2222 -p tmp.txt localhost 12345
+Start client: ./pbproxy -p tmp.txt localhost 2222
+
+2. ssh
+*ssh enabled on server*
+Start pbproxy in server mode: ./pbproxy -l 2222 -p tmp.txt locahost 22
+Start pbproxy in client mode: ssh -o "ProxyCommand ./pbproxy -p tmp.txt user@destinationaddr.com  2222" localhost
