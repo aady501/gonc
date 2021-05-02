@@ -2,37 +2,37 @@ package main
 
 import (
 	"flag"
-
+	"log"
 	"utils/tcp"
+	"io/ioutil"
 )
 
 func main() {
-	var host, port, proto,listen_port string
-	//var listen bool
-	flag.StringVar(&host, "host", "", "Remote host to connect, i.e. 127.0.0.1")
-	flag.StringVar(&proto, "proto", "tcp", "TCP/UDP mode")
+	var host, port, listen_port, pwd_file string
 	flag.StringVar(&listen_port, "l", "", "Listen port")
-	flag.StringVar(&port, "port", ":9999", "Port to listen on or connect to (prepended by colon), i.e. :9999")
+	flag.StringVar(&pwd_file, "p", "", "pwdfile")
 	flag.Parse()
+	if len(flag.Args()) == 2 {
+		host = flag.Args()[0]
+		port = flag.Args()[1]
+	}else{
+		flag.Usage()
+		return
+	}
 
-	switch proto {
-	case "tcp":
-		if listen_port != "" && host != "" {
-			tcp.StartServer(proto, port, listen_port, host)
-		} else if host != "" {
-			tcp.StartClient(proto, host, port)
-		} else {
-			flag.Usage()
+	if listen_port != "" && host != "" && pwd_file != "" {
+		password, err := ioutil.ReadFile(pwd_file)
+		if err != nil {
+			log.Println("Error in read file")
 		}
-	/*case "udp":
-		if listen {
-			udp.StartServer(proto, port)
-		} else if host != "" {
-			udp.StartClient(proto, host, port)
-		} else {
-			flag.Usage()
-		}*/
-	default:
+		tcp.StartServer(":"+port, ":"+listen_port, host, string(password))
+	} else if host != "" && pwd_file != "" {
+		password, err := ioutil.ReadFile(pwd_file)
+		if err != nil {
+			log.Println("Error in read file")
+		}
+		tcp.StartClient(host, ":"+port, string(password))
+	} else {
 		flag.Usage()
 	}
 }

@@ -9,14 +9,8 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
-	//"encoding/hex"
 	"golang.org/x/crypto/pbkdf2"
-	//"bytes"
-	"encoding/base64"
-	"time"
-	randMath "math/rand"
 	"bufio"
-	//"hash"
 )
 
 // Progress indicates transfer status
@@ -24,11 +18,10 @@ type Progress struct {
 	bytes uint64
 }
 
-func tcp_con_handle(params ...net.Conn) {
-	con := params[0]
-	if len(params) == 1 {
-		chan_to_remote := stream_copy(os.Stdin, con, true, false, "cli->stdin->proxy(Encrypt)")
-		chan_to_stdout := stream_copy(con, os.Stdout, false, true, "cli->proxy->stdout(Decrypt)")
+func tcp_con_handle(con net.Conn, proxy_con net.Conn, password string) {
+	if proxy_con == nil {
+		chan_to_remote := stream_copy(os.Stdin, con, true, password)
+		chan_to_stdout := stream_copy(con, os.Stdout, false, password)
 		select {
 		case <-chan_to_stdout:
 			log.Println("Remote connection is closed")
@@ -36,9 +29,8 @@ func tcp_con_handle(params ...net.Conn) {
 			log.Println("Local program is terminated")
 		}
 	}else{
-		proxy_con := params[1]
-		chan_to_stdout := stream_copy(con, proxy_con, false, false, "serv->host->proxy(Decrypt)")
-		chan_to_remote := stream_copy(proxy_con, con, true, false, "serv->proxy->host(Encrypt)")
+		chan_to_stdout := stream_copy(con, proxy_con, false, password)
+		chan_to_remote := stream_copy(proxy_con, con, true, password)
 		select {
 		case <-chan_to_stdout:
 			log.Println("Remote connection is closed")
@@ -46,24 +38,9 @@ func tcp_con_handle(params ...net.Conn) {
 			log.Println("Local program is terminated")
 		}
 	}
-	/*select {
-	case <-chan_to_stdout:
-		log.Println("Remote connection is closed")
-	case <-chan_to_remote:
-		log.Println("Local program is terminated")
-	}*/
 }
 
-func genSalt() string {
-	saltBytes := make([]byte, 8)
-	randMath.Seed(time.Now().UnixNano())
-	randMath.Read(saltBytes)
-	return base64.StdEncoding.EncodeToString(saltBytes)
-}
-
-
-// Performs copy operation between streams: os and tcp streams
-func stream_copy(src io.Reader, dst io.Writer,encrypt bool, flush bool, detail string) <-chan int {
+func stream_copy(src io.Reader, dst io.Writer,encrypt bool, password string) <-chan int {
 	buf_dst := bufio.NewWriter(dst)
 	buf_src := bufio.NewReader(src)
 	sync_channel := make(chan int)
@@ -86,14 +63,12 @@ func stream_copy(src io.Reader, dst io.Writer,encrypt bool, flush bool, detail s
 			if err != nil {
 				if err != io.EOF {
 					log.Printf("Read error: %s\n", err)
-				}/*else{
-					log.Println("Error in Read: %s\n",err)
-				}*/
+				}
 				break
 			}
 			if encrypt{
 				salt := make([]byte, 8)
-				key := pbkdf2.Key([]byte("aadil") , salt, 4096, 32, sha256.New)
+				key := pbkdf2.Key([]byte(password) , salt, 4096, 32, sha256.New)
 				block, err := aes.NewCipher(key)
 				if err != nil {
 					log.Fatalf(err.Error())
@@ -114,7 +89,7 @@ func stream_copy(src io.Reader, dst io.Writer,encrypt bool, flush bool, detail s
 				}
 			}else{
 				salt := make([]byte, 8)
-				key := pbkdf2.Key([]byte("aadil") , salt, 4096, 32, sha256.New)
+				key := pbkdf2.Key([]byte(password) , salt, 4096, 32, sha256.New)
 				block, err := aes.NewCipher(key)
 				if err != nil {
 					log.Fatalf(err.Error())
@@ -150,15 +125,13 @@ func stream_copy(src io.Reader, dst io.Writer,encrypt bool, flush bool, detail s
 }
 
 
-// StartServer starts TCP listener
-func StartServer(proto string, port string, listen_port string, host string) {
-	//connect_to_proxy := true
+func StartServer(port string, listen_port string, host string, password string) {
+	proto := "tcp"
 	ln, err := net.Listen(proto, listen_port)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	log.Println("Listening on", proto+listen_port)
-	//var proxy_con net.Conn
 	for{
 		log.Println("Waiting for new connection")
 		con, err := ln.Accept()
@@ -167,24 +140,21 @@ func StartServer(proto string, port string, listen_port string, host string) {
 		}
 		log.Printf("[%s]: Connection has been opened for client\n", con.RemoteAddr())
 
-		//if connect_to_proxy {
-			proxy_con, err := net.Dial(proto, host+port)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			log.Printf("Proxy Connected")
-			//connect_to_proxy = false
-		//
-		go tcp_con_handle(con, proxy_con)
+		proxy_con, err := net.Dial(proto, host+port)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		log.Printf("Proxy Connected")
+		go tcp_con_handle(con, proxy_con, password)
 	}
 }
 
-// StartClient starts TCP connector
-func StartClient(proto string, host string, port string) {
+func StartClient(host string, port string, password string) {
+	proto := "tcp"
 	con, err := net.Dial(proto, host+port)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	log.Println("Connected to", host+port)
-	tcp_con_handle(con)
+	tcp_con_handle(con, nil, password)
 }
