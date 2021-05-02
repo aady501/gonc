@@ -33,4 +33,4 @@ Start client: ./pbproxy -p tmp.txt localhost 2222
 2. ssh
 *ssh enabled on server*
 Start pbproxy in server mode: ./pbproxy -l 2222 -p tmp.txt locahost 22
-Start pbproxy in client mode: ssh -o "ProxyCommand ./pbproxy -p tmp.txt user@destinationaddr.com  2222" localhost
+Start pbproxy in client mode: ssh -o "ProxyCommand ./pbproxy -p tmp.txt vuln.cs.stonybrook.edu  2222" localhost
